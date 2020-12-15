@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -36,7 +38,8 @@ import lombok.SneakyThrows;
  *         ...</pre>
  * <p>
  * Usage: Place the JSON body printed by the <code>.andDo(print())</code> into the file
- * <code>src/main/resources/jsonPathInput.json</code>. Create it if it is not not there yet; it is ignored by git.
+ * <code>src/main/resources/jsonPathInput.json</code>. Create it if it is not not there yet; it
+ * is ignored by git.
  * <p>
  * Run this class.
  * <p>
@@ -52,8 +55,14 @@ public class JsonPathGenerator {
         File file = new File("out/jsonPathOutput");
         FileUtils.forceMkdirParent(file);
 
+        List<String> lines = new ArrayList<>();
+
+        traverse(ctx.read("$", LinkedHashMap.class), "$", lines);
+
         try (PrintStream out = openOutputStream(file)) {
-            traverse(ctx.read("$", LinkedHashMap.class), "$", out);
+            out.println(".andExpect(\n  matchAll(");
+            out.println(lines.stream().collect(Collectors.joining(",\n")));
+            out.println("))");
         }
 
         System.out.println("\nResult (dumped into " + file + "):\n\n");
@@ -61,31 +70,31 @@ public class JsonPathGenerator {
         System.out.println("");
     }
 
-    private static void traverse(Object tree, String prefix, PrintStream out) {
+    private static void traverse(Object tree, String prefix, List<String> lines) {
         if (tree instanceof Map) {
 
-            out.println(".andExpect(jsonPath(\"" + prefix + ".*\", hasSize(" + ((Map<?, ?>) tree)
-                    .size() + ")))");
+            lines.add("    jsonPath(\"" + prefix + ".*\", hasSize(" + ((Map<?, ?>) tree)
+                    .size() + "))");
 
             for (Object v :
                     ((Map<?, ?>) tree).keySet()) {
 
-                traverse(((Map<?, ?>) tree).get(v), prefix + "." + v, out);
+                traverse(((Map<?, ?>) tree).get(v), prefix + "." + v, lines);
             }
 
         } else if (tree instanceof List) {
 
-            out.println(".andExpect(jsonPath(\"" + prefix + "\", hasSize(" + ((List<?>) tree)
-                    .size() + ")))");
+            lines.add("    jsonPath(\"" + prefix + "\", hasSize(" + ((List<?>) tree)
+                    .size() + "))");
 
             for (int i = 0; i < ((List<?>) tree).size(); i++) {
-                traverse(((List<?>) tree).get(i), prefix + "[" + i + "]", out);
+                traverse(((List<?>) tree).get(i), prefix + "[" + i + "]", lines);
             }
 
         } else if (tree instanceof Number) {
-            out.println(".andExpect(jsonPath(\"" + prefix + "\").value(" + tree + "))");
+            lines.add("    jsonPath(\"" + prefix + "\").value(" + tree + ")");
         } else {
-            out.println(".andExpect(jsonPath(\"" + prefix + "\").value(\"" + tree + "\"))");
+            lines.add("    jsonPath(\"" + prefix + "\").value(\"" + tree + "\")");
         }
 
     }
