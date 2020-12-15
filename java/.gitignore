@@ -1,0 +1,6 @@
+out/
+build/
+.gradle/
+.idea
+src/main/resources/jsonPathInput.json
+
