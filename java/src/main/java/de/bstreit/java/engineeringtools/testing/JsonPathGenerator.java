@@ -61,8 +61,8 @@ public class JsonPathGenerator {
 
         try (PrintStream out = openOutputStream(file)) {
             out.println(".andExpect(\n  matchAll(");
-            out.println(lines.stream().collect(Collectors.joining(",\n")));
-            out.println("))");
+            out.println(String.join(",\n", lines));
+            out.println("));");
         }
 
         System.out.println("\nResult (dumped into " + file + "):\n\n");
