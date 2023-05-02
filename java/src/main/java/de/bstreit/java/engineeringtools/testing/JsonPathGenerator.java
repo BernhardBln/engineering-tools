@@ -60,9 +60,9 @@ public class JsonPathGenerator {
         traverse(ctx.read("$", LinkedHashMap.class), "$", lines);
 
         try (PrintStream out = openOutputStream(file)) {
-            out.println(".andExpect(\n  matchAll(");
+            out.println(".andExpectAll(");
             out.println(String.join(",\n", lines));
-            out.println("));");
+            out.println(");");
         }
 
         System.out.println("\nResult (dumped into " + file + "):\n\n");
