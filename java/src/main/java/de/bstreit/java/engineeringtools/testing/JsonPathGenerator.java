@@ -71,13 +71,16 @@ public class JsonPathGenerator {
     }
 
     private static void traverse(Object tree, String prefix, List<String> lines) {
-        if (tree instanceof Map) {
+        if (tree == null) {
+            lines.add("    jsonPath(\"" + prefix + "\").value(nullValue())");
+
+        } else if (tree instanceof Map) {
 
             lines.add("    jsonPath(\"" + prefix + ".*\", hasSize(" + ((Map<?, ?>) tree)
-                    .size() + "))");
+                .size() + "))");
 
             for (Object v :
-                    ((Map<?, ?>) tree).keySet()) {
+                ((Map<?, ?>) tree).keySet()) {
 
                 traverse(((Map<?, ?>) tree).get(v), prefix + "." + v, lines);
             }
@@ -85,7 +88,7 @@ public class JsonPathGenerator {
         } else if (tree instanceof List) {
 
             lines.add("    jsonPath(\"" + prefix + "\", hasSize(" + ((List<?>) tree)
-                    .size() + "))");
+                .size() + "))");
 
             for (int i = 0; i < ((List<?>) tree).size(); i++) {
                 traverse(((List<?>) tree).get(i), prefix + "[" + i + "]", lines);
@@ -103,7 +106,7 @@ public class JsonPathGenerator {
     private static String json() {
 
         try (InputStream stream = JsonPathGenerator.class.getClassLoader()
-                .getResourceAsStream("jsonPathInput.json")) {
+            .getResourceAsStream("jsonPathInput.json")) {
 
             return IOUtils.toString(stream, StandardCharsets.UTF_8);
         }
