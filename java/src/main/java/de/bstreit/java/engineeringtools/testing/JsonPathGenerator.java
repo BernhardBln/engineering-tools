@@ -60,7 +60,7 @@ public class JsonPathGenerator {
         traverse(ctx.read("$", LinkedHashMap.class), "$", lines);
 
         try (PrintStream out = openOutputStream(file)) {
-            out.println(".andExpectAll(");
+            out.println(".   andExpectAll(");
             out.println(String.join(",\n", lines));
             out.println(");");
         }
@@ -68,7 +68,9 @@ public class JsonPathGenerator {
         System.out.println("\nResult (dumped into " + file + "):\n\n");
         System.out.println(FileUtils.readFileToString(file, StandardCharsets.UTF_8));
         System.out.println("");
+        System.out.println("");
     }
+
 
     private static void traverse(Object tree, String prefix, List<String> lines) {
         if (tree == null) {
@@ -87,19 +89,30 @@ public class JsonPathGenerator {
 
         } else if (tree instanceof List) {
 
-            lines.add("    jsonPath(\"" + prefix + "\", hasSize(" + ((List<?>) tree)
-                .size() + "))");
+            lines.add("    jsonPath(\"" + prefix + "\", hasSize(" + ((List< ?>) tree).size() + "))");
 
-            for (int i = 0; i < ((List<?>) tree).size(); i++) {
-                traverse(((List<?>) tree).get(i), prefix + "[" + i + "]", lines);
+            if(isStringList((List<?>)tree)){
+
+                var elementList = ((List<?>) tree).stream().map(s -> "\"" + s + "\"").collect(Collectors.joining(", "));
+                lines.add("    jsonPath(\"" + prefix + "\", contains(" + elementList + "))");
+
+            } else {
+
+                for (int i = 0; i < ((List<?>) tree).size(); i++) {
+                    traverse(((List<?>) tree).get(i), prefix + "[" + i + "]", lines);
+                }
             }
 
-        } else if (tree instanceof Number) {
+        } else if (tree instanceof Number || tree instanceof Boolean) {
             lines.add("    jsonPath(\"" + prefix + "\").value(" + tree + ")");
         } else {
             lines.add("    jsonPath(\"" + prefix + "\").value(\"" + tree + "\")");
         }
 
+    }
+
+    private static boolean isStringList(List<?> tree) {
+        return tree.stream().allMatch(String.class::isInstance);
     }
 
     @SneakyThrows
